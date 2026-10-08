@@ -25,67 +25,254 @@ Language:
 - English -> English.
 - Hindi/Hinglish -> Hindi/Hinglish using Roman letters.
 
-Be honest about your capabilities.
+Rules:
+- Be honest about your capabilities.
+- Do not claim an action was completed unless it actually happened.
+- Give useful and clear answers.
 `;
 
+
+/* =========================
+   HOME / SERVER TEST
+   ========================= */
+
 app.get("/", (req, res) => {
+
   res.json({
     status: "online",
     service: "JARVIS backend",
     openaiKeyPresent:
       !!process.env.OPENAI_API_KEY
   });
+
 });
+
+
+/* =========================
+   OPENAI DIRECT TEST
+   ========================= */
+
+app.get("/test-ai", async (req, res) => {
+
+  try {
+
+    const response =
+      await client.responses.create({
+
+        model: "gpt-5.4-mini",
+
+        input:
+          "Reply with exactly: JARVIS AI TEST OK"
+
+      });
+
+    console.log("AI TEST SUCCESS");
+
+    res.json({
+
+      success: true,
+
+      reply:
+        response.output_text
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      "========== AI TEST ERROR =========="
+    );
+
+    console.error(
+      "STATUS:",
+      error?.status
+    );
+
+    console.error(
+      "CODE:",
+      error?.code
+    );
+
+    console.error(
+      "TYPE:",
+      error?.type
+    );
+
+    console.error(
+      "MESSAGE:",
+      error?.message
+    );
+
+    console.error(
+      "REQUEST ID:",
+      error?.request_id
+    );
+
+    console.error(
+      "==================================="
+    );
+
+    res.status(500).json({
+
+      success: false,
+
+      status:
+        error?.status || null,
+
+      code:
+        error?.code || null,
+
+      type:
+        error?.type || null,
+
+      message:
+        error?.message ||
+        "Unknown error"
+
+    });
+
+  }
+
+});
+
+
+/* =========================
+   JARVIS CHAT
+   ========================= */
 
 app.post("/chat", async (req, res) => {
 
   try {
 
-    const message = req.body.message;
+    const message =
+      req.body.message;
 
-    if (!message || typeof message !== "string") {
+    if (
+      !message ||
+      typeof message !== "string"
+    ) {
+
       return res.status(400).json({
-        error: "Message missing"
+
+        error:
+          "Message missing"
+
       });
+
     }
 
-    console.log("JARVIS REQUEST:", message);
 
-    const response = await client.responses.create({
-      model: "gpt-5.4-mini",
-      instructions: JARVIS_INSTRUCTIONS,
-      input: message
-    });
+    console.log(
+      "JARVIS REQUEST:",
+      message
+    );
 
-    console.log("OPENAI SUCCESS");
+
+    const response =
+      await client.responses.create({
+
+        model: "gpt-5.4-mini",
+
+        instructions:
+          JARVIS_INSTRUCTIONS,
+
+        input:
+          message
+
+      });
+
+
+    console.log(
+      "OPENAI SUCCESS"
+    );
+
 
     res.json({
-      reply: response.output_text,
-      conversationId: response.id
+
+      reply:
+        response.output_text,
+
+      conversationId:
+        response.id
+
     });
+
 
   } catch (error) {
 
-    console.error("========== JARVIS ERROR ==========");
-    console.error("STATUS:", error?.status);
-    console.error("CODE:", error?.code);
-    console.error("TYPE:", error?.type);
-    console.error("MESSAGE:", error?.message);
-    console.error("REQUEST ID:", error?.request_id);
-    console.error("===================================");
+    console.error(
+      "========== JARVIS ERROR =========="
+    );
+
+    console.error(
+      "STATUS:",
+      error?.status
+    );
+
+    console.error(
+      "CODE:",
+      error?.code
+    );
+
+    console.error(
+      "TYPE:",
+      error?.type
+    );
+
+    console.error(
+      "MESSAGE:",
+      error?.message
+    );
+
+    console.error(
+      "REQUEST ID:",
+      error?.request_id
+    );
+
+    console.error(
+      "==================================="
+    );
+
 
     res.status(500).json({
-      error: "AI request failed",
-      status: error?.status || null,
-      code: error?.code || null,
-      type: error?.type || null,
-      message: error?.message || "Unknown error"
+
+      error:
+        "AI request failed",
+
+      status:
+        error?.status || null,
+
+      code:
+        error?.code || null,
+
+      type:
+        error?.type || null,
+
+      message:
+        error?.message ||
+        "Unknown error"
+
     });
+
   }
+
 });
 
-const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`JARVIS backend running on port ${PORT}`);
-});
+/* =========================
+   START SERVER
+   ========================= */
+
+const PORT =
+  process.env.PORT || 3000;
+
+app.listen(
+  PORT,
+  () => {
+
+    console.log(
+      `JARVIS backend running on port ${PORT}`
+    );
+
+  }
+);
