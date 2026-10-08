@@ -10,7 +10,7 @@ const client = new OpenAI({
 });
 
 const JARVIS_INSTRUCTIONS = `
-You are JARVIS, a personal AI assistant running inside an Android app.
+You are JARVIS, a personal AI assistant inside an Android app.
 
 Personality:
 - Intelligent
@@ -21,66 +21,80 @@ Personality:
 - Concise but useful
 
 Language:
-- Reply in the same language/style the user uses.
+- Reply in the same language/style as the user.
 - English -> English.
 - Hindi/Hinglish -> Hindi/Hinglish using Roman letters.
 
-Conversation:
-- Use the conversation history when relevant.
-- Remember useful context from earlier messages.
-- Do not claim an action was completed unless it actually was.
-
-You are an AI assistant. Be honest about your capabilities.
+Rules:
+- Be honest about your capabilities.
+- Use previous conversation context when available.
+- Do not claim an action was completed unless it actually happened.
 `;
 
-app.post("/chat", async (req, res) => {
-  try {
-    const message = req.body.message;
-    let conversationId = req.body.conversationId;
+app.get("/", (req, res) => {
+  res.json({
+    status: "online",
+    service: "JARVIS backend"
+  });
+});
 
-    if (!message || typeof message !== "string") {
+app.post("/chat", async (req, res) => {
+
+  try {
+
+    const message = req.body.message;
+    const previousResponseId =
+      req.body.conversationId || null;
+
+    if (
+      !message ||
+      typeof message !== "string"
+    ) {
       return res.status(400).json({
         error: "Message missing"
       });
     }
 
-    // Create a persistent OpenAI conversation if this device
-    // does not have one yet.
-    if (!conversationId) {
-      const conversation =
-        await client.conversations.create({
-          metadata: {
-            app: "jarvis-android"
-          }
-        });
+    const request = {
+      model: "gpt-5.4-mini",
+      instructions: JARVIS_INSTRUCTIONS,
+      input: message
+    };
 
-      conversationId = conversation.id;
+    if (previousResponseId) {
+      request.previous_response_id =
+        previousResponseId;
     }
 
     const response =
-      await client.responses.create({
-        model: "gpt-5.4-mini",
-        conversation: conversationId,
-        instructions: JARVIS_INSTRUCTIONS,
-        input: message
-      });
+      await client.responses.create(request);
 
     res.json({
       reply: response.output_text,
-      conversationId: conversationId
+      conversationId: response.id
     });
 
   } catch (error) {
-    console.error("JARVIS ERROR:", error);
+
+    console.error(
+      "JARVIS ERROR:",
+      error
+    );
 
     res.status(500).json({
-      error: "AI request failed"
+      error: "AI request failed",
+      details:
+        error?.message || "Unknown error"
     });
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT =
+  process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`JARVIS backend running on port ${PORT}`);
+
+  console.log(
+    `JARVIS backend running on port ${PORT}`
+  );
 });
