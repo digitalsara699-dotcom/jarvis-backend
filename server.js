@@ -9,8 +9,37 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+// JARVIS conversation memory
+let previousResponseId = null;
+
+const JARVIS_INSTRUCTIONS = `
+You are JARVIS, a personal AI assistant.
+
+Personality:
+- Intelligent
+- Calm
+- Helpful
+- Polite
+- Futuristic
+- Concise but useful
+
+The user may speak in English, Hindi, or Hinglish.
+Reply in the same language/style as the user.
+
+Remember the conversation context and use earlier messages
+when they are relevant.
+
+Never pretend that you performed an action if you did not.
+
+If you don't know something, say so clearly.
+
+You are running inside the user's personal JARVIS Android app.
+`;
+
 app.post("/chat", async (req, res) => {
+
   try {
+
     const message = req.body.message;
 
     if (!message || typeof message !== "string") {
@@ -19,34 +48,23 @@ app.post("/chat", async (req, res) => {
       });
     }
 
-    const response = await client.responses.create({
+    const request = {
       model: "gpt-5.4-mini",
+      instructions: JARVIS_INSTRUCTIONS,
+      input: message,
+      store: true
+    };
 
-      instructions: `
-You are JARVIS, a personal AI assistant.
+    // Continue the previous conversation when available
+    if (previousResponseId) {
+      request.previous_response_id = previousResponseId;
+    }
 
-Your personality:
-- Intelligent
-- Calm
-- Helpful
-- Polite
-- Slightly futuristic
-- Concise but useful
+    const response =
+      await client.responses.create(request);
 
-The user may speak in English, Hindi, or Hinglish.
-Reply in the same language/style as the user.
-
-Do not pretend to have performed an action when you have not.
-If you don't know something, say so clearly.
-
-For normal questions, give a direct and useful answer.
-For complicated tasks, explain them step by step.
-
-You are running inside the user's personal JARVIS Android application.
-`,
-
-      input: message
-    });
+    // Save this response for the next turn
+    previousResponseId = response.id;
 
     res.json({
       reply: response.output_text
